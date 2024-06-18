@@ -4,69 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscribe to @Huskon's YouTube Channel</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-</head>
-<body>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        function loadClient() {
+            gapi.client.setApiKey('AIzaSyBgEww8_mKFHY4ZlErSpLOzbgjUd3O_JO8');
+            return gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest")
+                .then(function() { console.log("GAPI client loaded for API"); },
+                      function(err) { console.error("Error loading GAPI client for API", err); });
+        }
 
-<button id="subscribeBtn">Subscribe to @Huskon's Channel</button>
+        function authenticate() {
+            return gapi.auth2.getAuthInstance()
+                .signIn({scope: "https://www.googleapis.com/auth/youtube.force-ssl"})
+                .then(function() { console.log("Sign-in successful"); },
+                      function(err) { console.error("Error signing in", err); });
+        }
 
-<script>
-$(document).ready(function() {
-    const apiKey = 'AIzaSyBgEww8_mKFHY4ZlErSpLOzbgjUd3O_JO8';
-    const channelHandle = '@Huskon';
-
-    // Function to get channel ID from the handle
-    function getChannelId(handle, callback) {
-        const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${handle}&key=${apiKey}`;
-        $.get(apiUrl, function(response) {
-            if (response.items && response.items.length > 0) {
-                const channelId = response.items[0].snippet.channelId;
-                callback(channelId);
-            } else {
-                console.error('Channel not found.');
-                alert('Channel not found. Please check the handle.');
-            }
-        });
-    }
-
-    // Function to subscribe to the channel
-    function subscribeToChannel(channelId) {
-        const apiUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet';
-        $.ajax({
-            url: apiUrl,
-            type: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + apiKey,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({
-                snippet: {
-                    resourceId: {
-                        kind: 'youtube#channel',
-                        channelId: channelId
+        function subscribeToChannel(channelId) {
+            return gapi.client.youtube.subscriptions.insert({
+                part: "snippet",
+                resource: {
+                    snippet: {
+                        resourceId: {
+                            kind: "youtube#channel",
+                            channelId: channelId
+                        }
                     }
                 }
-            }),
-            success: function(response) {
-                console.log('Successfully subscribed to the channel!');
+            }).then(function(response) {
+                console.log("Response", response);
                 alert('Successfully subscribed to the channel!');
-            },
-            error: function(xhr, status, error) {
-                console.error('Error subscribing to the channel:', error);
+            }, function(err) {
+                console.error("Execute error", err);
                 alert('Error subscribing to the channel. Please try again later.');
-            }
-        });
-    }
+            });
+        }
 
-    // Event listener for the subscribe button
-    $('#subscribeBtn').on('click', function() {
-        getChannelId(channelHandle, function(channelId) {
-            subscribeToChannel(channelId);
-        });
-    });
-});
-</script>
+        function getChannelId(handle, callback) {
+            const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${handle}&key=AIzaSyBgEww8_mKFHY4ZlErSpLOzbgjUd3O_JO8`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.items && data.items.length > 0) {
+                        const channelId = data.items[0].snippet.channelId;
+                        callback(channelId);
+                    } else {
+                        console.error('Channel not found.');
+                        alert('Channel not found. Please check the handle.');
+                    }
+                });
+        }
 
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("authorize_button").onclick = function() {
+                authenticate().then(loadClient);
+            };
+            document.getElementById("subscribeBtn").onclick = function() {
+                getChannelId('@Huskon', function(channelId) {
+                    subscribeToChannel(channelId);
+                });
+            };
+        });
+    </script>
+</head>
+<body>
+    <button id="authorize_button">Authorize</button>
+    <button id="subscribeBtn">Subscribe to @Huskon's Channel</button>
 </body>
 </html>
